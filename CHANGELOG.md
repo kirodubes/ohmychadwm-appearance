@@ -3,6 +3,8 @@
 ## 2026.10.01
 
 ### What Changed
+- Dropped the "Not in v1" ideas list from `CLAUDE.md` (GTK 3 preview, theme removal, other tiling WMs, ATT
+  deep link): none of them are planned.
 - **Display name is now "Ohmychadwm"** in every user-visible string: window title (also shown in the
   ohmychadwm bar), page header, the bar section, buttons, status lines and the menu entry. Paths, binary and
   package name stay lowercase.

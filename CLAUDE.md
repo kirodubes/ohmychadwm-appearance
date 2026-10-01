@@ -93,10 +93,3 @@ size is the exception: GTK 3 `0` means "X default", so `Xcursor.size` wins.
   daemon thread and reports back via `GLib.idle_add`.
 - Test the toolkit-free modules with `HOME=$TMPDIR/fakehome python3 -c …` against copied config files, never against
   the real home.
-
-## Not in v1 (ideas, tracked in HQ MASTER_TODO if picked up)
-
-- In-app preview of a GTK 3 theme (GTK4 can't render GTK3 themes).
-- Removing installed themes.
-- Other Kiro X11 tiling WMs (only `oma_chadwm.py` is ohmychadwm-specific).
-- Deep link from ATT.
