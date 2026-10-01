@@ -1,0 +1,83 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code when working with code in this repository.
+
+## Project Overview
+
+ohmychadwm Appearance is a standalone GTK4 Python app, lxappearance-style, for the **ohmychadwm** X11 desktop. It
+sets the GTK theme, icons, cursor (+ size), font, light/dark style and the ohmychadwm **bar theme** / optional **bar
+font**, and keeps every place those live in sync. It ships in `nemesis_repo`.
+
+- **Language**: Python 3, GTK4 + PyGObject. Same look and layout conventions as fish-tweak-tool.
+- **Entry point**: `usr/share/ohmychadwm-appearance/ohmychadwm-appearance.py`
+- **Launcher**: `usr/bin/ohmychadwm-appearance` · **Desktop entry**: `usr/share/applications/ohmychadwm-appearance.desktop`
+- **Runs as the normal user.** The ONE exception is the `pkexec install` of the rebuilt ohmychadwm binary. Never add
+  other root escalation.
+- **Design study** (offline, in Kiro-HQ): `STUDIES/OHMYCHADWM-APPEARANCE-STUDY.md`. It holds the options comparison
+  and the reasons for this design.
+
+## Architecture
+
+```
+usr/share/ohmychadwm-appearance/
+├── ohmychadwm-appearance.py  # Gtk.Application + window, CSS, prefs window size
+├── oma_gui.py                # the single page: drift banner, pickers, Apply (worker thread → GLib.idle_add)
+├── oma_targets.py            # every settings target: read_all / current / drift / apply  (toolkit-free)
+├── oma_chadwm.py             # config.def.h: theme include, managed font block, rebuild, restart (toolkit-free)
+├── oma_scan.py               # discover GTK / icon / cursor themes (toolkit-free)
+├── oma_config.py             # app prefs (~/.config/ohmychadwm-appearance/prefs.json)
+├── log.py                    # console logging (shared shape with the other Kiro tools)
+└── oma.css
+```
+
+Module prefix `oma_` = **o**h**m**ychadwm **a**ppearance, mirroring fish-tweak-tool's `ftt_`.
+
+## Write targets (read before touching oma_targets.py)
+
+| Target | Fields |
+|---|---|
+| `~/.config/gtk-3.0/settings.ini` | theme, icons, cursor, size, font. **Thunar reads this**: xfsettingsd is NOT running in ohmychadwm |
+| `~/.config/gtk-4.0/settings.ini` | the same + `gtk-application-prefer-dark-theme` |
+| `~/.gtkrc-2.0` | theme, icons, cursor, size, font (quoted strings) |
+| gsettings `org.gnome.desktop.interface` | gtk-theme, icon-theme, cursor-theme, cursor-size, font-name, color-scheme |
+| xfconf channel `xsettings` | /Net/ThemeName, /Net/IconThemeName, /Gtk/CursorThemeName, /Gtk/CursorThemeSize, /Gtk/FontName |
+| `~/.icons/default/index.theme` | `Inherits=` cursor |
+| `~/.Xresources` | `Xcursor.theme`, `Xcursor.size` → `xrdb -merge` + `xsetroot -cursor_name left_ptr` |
+
+`current()` takes GTK 3 first (what Thunar shows), then gsettings, then the Kiro default from `/etc/skel`. The cursor
+size is the exception: GTK 3 `0` means "X default", so `Xcursor.size` wins.
+
+## Gotchas — do not revert
+
+- **xfconf: always use `xfconf-query`, never edit `xsettings.xml`.** xfconfd caches the channel and overwrites hand
+  edits. `-n -t <type> -s` happily retypes an existing property (tested). The reset-then-create fallback is only a
+  safety net.
+- **Bar font = managed block after the last theme include.** Every `themes/*.h` defines its own `THEME_FONT`, so
+  editing the `#ifndef THEME_FONT` fallback in config.def.h does nothing. The block uses `#undef` first (no
+  redefinition warnings) and is regenerated whole. Only `THEME_FONT` and `THEME_FONTSIZE` are overridden; the theme's
+  `THEME_FONTSTYLE` and the Nerd Font icon entries (`fonts[1]`, `menufonts`) stay as they are.
+- **Rebuild must `make clean` first.** The Makefile only copies config.def.h → config.h when config.h is missing.
+- **Restart = `xdotool key super+shift+r`.** dwm's `restart()` sets `running = 0` and exits 0; the `run.sh` loop
+  relaunches it. There is no signal hook. Don't kill the process, because a non-zero exit after 5 s counts as a
+  logout.
+- Edit the **user** copy `~/.config/ohmychadwm/chadwm/config.def.h`, never `/etc/skel`.
+- All file writes are line-based upserts (keys and comments the app doesn't own survive) with a one-time
+  `<file>.oma-bak` backup. Keep it that way, and don't switch to configparser, which drops comments.
+- ohmychadwm's own terminal scripts `scripts/apply-font-globally.sh` / `generate-chadwm-theme.sh` touch rofi/terminal
+  fonts and theme generation. They are a different scope, so don't merge them in here.
+
+## Code style
+
+- ruff (`ruff.toml`, line length 120) must pass. One-line docstrings on public functions; none needed on `_private`
+  ones.
+- GTK callbacks name unused widget params `_widget`. Never `subprocess.call` from a callback; slow work runs in a
+  daemon thread and reports back via `GLib.idle_add`.
+- Test the toolkit-free modules with `HOME=$TMPDIR/fakehome python3 -c …` against copied config files, never against
+  the real home.
+
+## Not in v1 (ideas, tracked in HQ MASTER_TODO if picked up)
+
+- In-app preview of a GTK 3 theme (GTK4 can't render GTK3 themes).
+- Removing installed themes.
+- Other Kiro X11 tiling WMs (only `oma_chadwm.py` is ohmychadwm-specific).
+- Deep link from ATT.

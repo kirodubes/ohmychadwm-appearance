@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=ohmychadwm Appearance
+GenericName=Appearance Settings
+Comment=Set GTK theme, icons, cursor, font and the ohmychadwm bar theme in one place
+Exec=/usr/bin/ohmychadwm-appearance
+Icon=preferences-desktop-theme
+Terminal=false
+Type=Application
+Categories=GTK;Settings;DesktopSettings;X-Kiro-Apps;
+Keywords=theme;icons;cursor;font;appearance;gtk;lxappearance;ohmychadwm;chadwm
+StartupNotify=true
