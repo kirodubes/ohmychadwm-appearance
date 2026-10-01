@@ -12,9 +12,12 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 
+import oma_env
+
 SCHEMA = "org.gnome.desktop.interface"
 
 # Display labels, in the order the drift banner lists them.
+SYSTEM = "System GTK_THEME"
 GTK3 = "GTK 3 (Thunar)"
 GTK4 = "GTK 4"
 GTK2 = "GTK 2"
@@ -232,9 +235,15 @@ def _read_xresources():
     return {"cursor": kv.get("Xcursor.theme"), "cursor_size": kv.get("Xcursor.size")}
 
 
+def _read_system():
+    theme, active = oma_env.read()
+    return {"theme": theme} if active else None
+
+
 def read_all():
     """Return {target label: {field: raw value or None}}, or None for a target that isn't configured."""
     return {
+        SYSTEM: _read_system(),
         GTK3: _read_ini(gtk3_ini()),
         GTK4: _read_ini(gtk4_ini()),
         GTK2: _read_gtkrc2(),
@@ -269,9 +278,11 @@ def kiro_default():
 
 
 def current(state=None):
-    """Return the selection the session uses now: GTK 3 first (what Thunar shows), then gsettings."""
+    """Return the selection the session uses now: a forced GTK_THEME, then GTK 3 (what Thunar shows), then gsettings."""
     state = state or read_all()
     sel = _from_values(state.get(GTK3), _from_values(state.get(GSETTINGS), kiro_default()))
+    if state.get(SYSTEM):
+        sel.theme = state[SYSTEM]["theme"] or sel.theme
     gs = state.get(GSETTINGS) or {}
     if gs.get("dark") is not None:
         sel.dark = _bool(gs["dark"])

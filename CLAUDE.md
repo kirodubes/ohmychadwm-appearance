@@ -11,8 +11,9 @@ font**, and keeps every place those live in sync. It ships in `nemesis_repo`.
 - **Language**: Python 3, GTK4 + PyGObject. Same look and layout conventions as fish-tweak-tool.
 - **Entry point**: `usr/share/ohmychadwm-appearance/ohmychadwm-appearance.py`
 - **Launcher**: `usr/bin/ohmychadwm-appearance` · **Desktop entry**: `usr/share/applications/ohmychadwm-appearance.desktop`
-- **Runs as the normal user.** The ONE exception is the `pkexec install` of the rebuilt ohmychadwm binary. Never add
-  other root escalation.
+- **Runs as the normal user.** All root work goes through ONE helper, `oma_root.py`, run once per Apply via
+  `pkexec`: the `GTK_THEME` line in `/etc/environment` and installing the rebuilt binary. Never add other root
+  escalation.
 - **Design study** (offline, in Kiro-HQ): `STUDIES/OHMYCHADWM-APPEARANCE-STUDY.md`. It holds the options comparison
   and the reasons for this design.
 
@@ -25,6 +26,8 @@ usr/share/ohmychadwm-appearance/
 ├── oma_targets.py            # every settings target: read_all / current / drift / apply  (toolkit-free)
 ├── oma_chadwm.py             # config.def.h: theme include, managed font block, rebuild, restart (toolkit-free)
 ├── oma_scan.py               # discover GTK / icon / cursor themes (toolkit-free)
+├── oma_env.py                # GTK_THEME line in /etc/environment: parse / force / release (pure, toolkit-free)
+├── oma_root.py               # the pkexec helper: --gtk-theme / --release-gtk-theme / --install (fixed dest)
 ├── oma_config.py             # app prefs (~/.config/ohmychadwm-appearance/prefs.json)
 ├── log.py                    # console logging (shared shape with the other Kiro tools)
 └── oma.css
@@ -36,6 +39,7 @@ Module prefix `oma_` = **o**h**m**ychadwm **a**ppearance, mirroring fish-tweak-t
 
 | Target | Fields |
 |---|---|
+| `/etc/environment` `GTK_THEME` (root, via `oma_root.py`) | theme. **Beats every file below** for GTK 3 and 4; read by pam_env, so changes show after re-login |
 | `~/.config/gtk-3.0/settings.ini` | theme, icons, cursor, size, font. **Thunar reads this**: xfsettingsd is NOT running in ohmychadwm |
 | `~/.config/gtk-4.0/settings.ini` | the same + `gtk-application-prefer-dark-theme` |
 | `~/.gtkrc-2.0` | theme, icons, cursor, size, font (quoted strings) |
@@ -44,10 +48,18 @@ Module prefix `oma_` = **o**h**m**ychadwm **a**ppearance, mirroring fish-tweak-t
 | `~/.icons/default/index.theme` | `Inherits=` cursor |
 | `~/.Xresources` | `Xcursor.theme`, `Xcursor.size` → `xrdb -merge` + `xsetroot -cursor_name left_ptr` |
 
-`current()` takes GTK 3 first (what Thunar shows), then gsettings, then the Kiro default from `/etc/skel`. The cursor
+`current()` takes an active `GTK_THEME` first for the theme, then GTK 3 (what Thunar shows), then gsettings, then the Kiro default from `/etc/skel`. The cursor
 size is the exception: GTK 3 `0` means "X default", so `Xcursor.size` wins.
 
 ## Gotchas — do not revert
+
+- **`GTK_THEME` is Kiro's real theme switch.** The ISO ships `GTK_THEME=Arc-Dawn-Dark` in `/etc/environment`, and
+  ATT's themes page toggles that exact line. The "force" checkbox keeps it (rewrites it); unticking comments it out
+  (`#GTK_THEME=…`, kept so it can be re-enabled, and ATT still recognises it). `oma_env.force` keeps the line's
+  quoting style and rejects unsafe names. Never drop the line, and never set the theme only in `settings.ini` while
+  the line is active, because nothing would change.
+- **Reset to Kiro default covers everything**: GTK pickers from `/etc/skel`, force back on, the bar theme from the
+  skel `config.def.h`, and the bar font block removed. Keep it complete when adding a setting.
 
 - **xfconf: always use `xfconf-query`, never edit `xsettings.xml`.** xfconfd caches the channel and overwrites hand
   edits. `-n -t <type> -s` happily retypes an existing property (tested). The reset-then-create fallback is only a

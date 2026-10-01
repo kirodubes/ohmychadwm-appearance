@@ -12,10 +12,27 @@ over time GTK 4 apps end up with different icons, fonts or cursor sizes than Thu
 ohmychadwm Appearance writes all of them at once. It shows an **"out of sync"** banner when they disagree, with a
 one-click **Fix all**.
 
+## The system-wide theme (GTK_THEME)
+
+Kiro sets `GTK_THEME` in `/etc/environment`, and that beats every settings file: GTK 3 and GTK 4 apps use it
+whatever the files below say. The app treats it as the current theme and gives you the choice:
+
+- **Force this theme on every app (system-wide)**: the Kiro default. A theme change rewrites the `GTK_THEME` line
+  (asks your password once) and shows after you log out and back in.
+- **Untick it** to comment the line out. Apps then follow your personal settings; some GTK 4 / libadwaita apps may
+  keep their own look. Ticking it again brings the line back.
+
+## Reset to Kiro default
+
+**Reset to Kiro default** loads the look Kiro ships for *everything* the app touches: theme, icons, cursor, font and
+style (from `/etc/skel`), `GTK_THEME` forced again, the default bar theme (from the skel `config.def.h`) and no bar
+font override. Press **Apply** to write it.
+
 ## What it sets
 
 | Setting | Written to |
 |---|---|
+| Theme (system-wide) | the `GTK_THEME` line in `/etc/environment`: forced or commented out (backup `/etc/environment.oma-bak`) |
 | Theme, icons, cursor, cursor size, font | `~/.config/gtk-3.0/settings.ini`, `~/.config/gtk-4.0/settings.ini`, `~/.gtkrc-2.0`, gsettings `org.gnome.desktop.interface`, XFCE `xsettings` channel (via `xfconf-query`) |
 | Cursor | also `~/.icons/default/index.theme` and `~/.Xresources` (applied live with `xrdb` + `xsetroot`) |
 | Light / dark style | gsettings `color-scheme` + GTK 4 `gtk-application-prefer-dark-theme` |
@@ -27,7 +44,7 @@ Before it changes a file for the first time, the app keeps a copy of the origina
 ## The ohmychadwm bar
 
 ohmychadwm's bar is compiled into the window manager. When you change the bar theme or bar font, the app recompiles
-ohmychadwm as your user and installs it with **one** password prompt (pkexec). With `xdotool` installed it can then
+ohmychadwm as your user and installs it with **one** password prompt (pkexec), shared with a `GTK_THEME` change in the same Apply. With `xdotool` installed it can then
 restart ohmychadwm for you; otherwise press **Super+Shift+R**.
 
 The bar font is opt-in ("Also use the font above for the bar"). The bar's tag icons need a Nerd Font, and the app

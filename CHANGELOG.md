@@ -3,6 +3,15 @@
 ## 2026.10.01
 
 ### What Changed
+- **GTK_THEME support.** Kiro sets the GTK theme system-wide via `GTK_THEME` in `/etc/environment`, which beats
+  every settings file, so the first version showed the wrong current theme and its theme changes had no visible
+  effect. The app now reads `GTK_THEME` as the current theme. A **"Force this theme on every app
+  (system-wide)"** checkbox (on by default, like Kiro ships) rewrites the line; unticking it comments the line out so
+  apps follow the per-user settings, with a warning that some GTK 4 apps may keep their own look.
+- **Reset to Kiro default now resets everything**: GTK pickers, `GTK_THEME` forced back on, the default bar theme,
+  and no bar font override.
+- All root work (the `GTK_THEME` line + the bar binary install) goes through one pkexec helper, `oma_root.py`, so an
+  Apply asks for the password at most once.
 - Initial package: **ohmychadwm Appearance**, a GTK4 lxappearance-style tool for ohmychadwm. Why: one appearance
   choice lives in 7+ places (GTK 2/3/4, gsettings, xfconf, X cursor, the compiled bar), and lxappearance only writes
   GTK 2/3, so GTK 4 apps drifted away from Thunar (different icons, fonts, cursor sizes).
@@ -17,7 +26,7 @@
   The bar font is instead overridden by a managed `#undef`/`#define` block placed after the last theme include. It
   is regenerated whole and removed when the checkbox is off.
 - `make` only regenerates `config.h` when it is missing, so the rebuild is `make clean` → `make` (user) →
-  `pkexec install -Dm755 … /usr/local/bin/ohmychadwm` → `make clean`, mirroring `chadwm/rebuild.sh`.
+  `pkexec oma_root.py --install` (atomic copy to `/usr/local/bin/ohmychadwm`) → `make clean`, mirroring `chadwm/rebuild.sh`.
 - Restart goes through `xdotool key super+shift+r`. dwm's `restart` exits 0 and the `run.sh` session loop relaunches
   it, and there is no signal hook to use instead.
 - xfconf is written via `xfconf-query -n -t <type> -s`, never by editing `xsettings.xml`, because xfconfd caches
@@ -29,6 +38,7 @@
   be tested against a scratch `HOME`.
 
 ### Files Modified
+- `usr/share/ohmychadwm-appearance/oma_env.py`, `usr/share/ohmychadwm-appearance/oma_root.py` (new)
 - `usr/bin/ohmychadwm-appearance`
 - `usr/share/applications/ohmychadwm-appearance.desktop`
 - `usr/share/ohmychadwm-appearance/ohmychadwm-appearance.py`

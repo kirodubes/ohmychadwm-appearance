@@ -1,5 +1,8 @@
 """GTK4 GUI for ohmychadwm-appearance: one page, five pickers, one Apply."""
 
+import os
+import subprocess
+import sys
 import threading
 
 import gi
@@ -10,10 +13,13 @@ from gi.repository import GLib, Gtk, Pango  # noqa: E402
 
 import log  # noqa: E402
 import oma_chadwm  # noqa: E402
+import oma_env  # noqa: E402
 import oma_scan  # noqa: E402
 import oma_targets  # noqa: E402
 
 _CURSOR_SIZES = [16, 24, 32, 48, 64]
+
+_ROOT_HELPER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "oma_root.py")
 
 # Standard freedesktop icon names — every complete icon theme ships these.
 _PREVIEW_ICONS = [
@@ -149,6 +155,7 @@ class AppearancePage:
 
         state = oma_targets.read_all()
         sel = oma_targets.current(state)
+        self._forced = state.get(oma_targets.SYSTEM) is not None
         config = oma_chadwm.read_config()
         self._has_chadwm = bool(config)
 
@@ -171,6 +178,7 @@ class AppearancePage:
         self.widget.append(self._build_footer())
 
         self._update_theme_note()
+        self._update_force_note()
         self._update_icon_preview()
         self._update_font_warning()
         self._refresh_drift(state)
@@ -212,6 +220,18 @@ class AppearancePage:
         grid.attach(_row_label("Theme"), 0, 0, 1, 1)
         grid.attach(self._dd_theme, 1, 0, 2, 1)
         grid.attach(self._theme_note, 1, 1, 2, 1)
+        self._chk_force = Gtk.CheckButton(label="Force this theme on every app (system-wide)")
+        self._chk_force.set_tooltip_text(
+            "Sets GTK_THEME in /etc/environment, as Kiro ships it. Needs your password; shows after re-login."
+        )
+        self._chk_force.set_active(self._forced)
+        self._chk_force.connect("toggled", lambda *_: self._update_force_note())
+        self._force_note = _muted()
+        self._force_note.add_css_class("warning-text")
+        force_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        force_box.append(self._chk_force)
+        force_box.append(self._force_note)
+        grid.attach(force_box, 1, 7, 2, 1)
 
         self._dd_icons = _dropdown(oma_scan.icon_themes(), sel.icons)
         self._dd_icons.connect("notify::selected", lambda *_: self._update_icon_preview())
@@ -260,7 +280,9 @@ class AppearancePage:
             self._chk_bar_font = None
             self._font_warning = _muted()
             return box
-        box.append(_muted("Colours and font of the top bar. Changing these recompiles ohmychadwm (asks your password once)."))
+        box.append(_muted(
+            "Colours and font of the top bar. Changing these recompiles ohmychadwm (asks your password once)."
+        ))
         grid = self._grid()
 
         self._bar_theme_now = oma_chadwm.active_theme(config) or ""
@@ -312,6 +334,15 @@ class AppearancePage:
         else:
             self._theme_note.set_label("This theme has no GTK 4 version — GTK 4 apps will look like Adwaita.")
             self._theme_note.set_visible(True)
+
+    def _update_force_note(self):
+        if self._chk_force.get_active():
+            self._force_note.set_visible(False)
+        else:
+            self._force_note.set_label(
+                "Without it, apps follow your personal settings — some GTK 4 / libadwaita apps may keep their own look."
+            )
+            self._force_note.set_visible(True)
 
     def _update_icon_preview(self):
         while (child := self._icon_strip.get_first_child()) is not None:
@@ -385,9 +416,11 @@ class AppearancePage:
         _select(self._dd_size, str(sel.cursor_size))
         self._font_btn.set_font_desc(Pango.FontDescription.from_string(sel.font))
         (self._chk_dark if sel.dark else self._chk_light).set_active(True)
-        if self._chk_bar_font is not None:
+        self._chk_force.set_active(True)  # the Kiro ISO ships GTK_THEME forced
+        if self._dd_bar is not None:
+            _select(self._dd_bar, oma_chadwm.default_theme())
             self._chk_bar_font.set_active(False)
-        self._set_status("Kiro defaults loaded — press Apply to use them.")
+        self._set_status("Kiro defaults loaded for everything — press Apply to use them.")
 
     def _on_apply(self, _widget):
         if self._busy:
@@ -398,15 +431,25 @@ class AppearancePage:
         self._set_status("Applying…")
         sel = self._selection()
         bar = self._bar_plan()
-        threading.Thread(target=self._apply_worker, args=(sel, bar), daemon=True).start()
+        force = self._chk_force.get_active()
+        threading.Thread(target=self._apply_worker, args=(sel, bar, force), daemon=True).start()
 
-    def _apply_worker(self, sel, bar):
+    def _apply_worker(self, sel, bar, force):
         log.log_section("Apply")
         results = oma_targets.apply(sel)
         for label, ok, msg in results:
             (log.log_success if ok else log.log_error)(f"{label}: {msg}")
 
-        bar_result = None
+        root_args, notes, bar_result = [], [], None
+        env_theme, env_active = oma_env.read()
+        if force and (not env_active or env_theme != sel.theme):
+            root_args += ["--gtk-theme", sel.theme]
+            notes.append("theme")
+        elif not force and env_active:
+            root_args.append("--release-gtk-theme")
+            notes.append("theme")
+
+        compiled = False
         if bar is not None:
             theme, font = bar
             try:
@@ -416,15 +459,32 @@ class AppearancePage:
                 if new != text:
                     GLib.idle_add(self._set_status, "Recompiling ohmychadwm…")
                     oma_chadwm.write_config(new)
-                    bar_result = oma_chadwm.rebuild()
+                    compiled, msg = oma_chadwm.compile_wm()
+                    if compiled:
+                        root_args += ["--install", oma_chadwm.BUILT_BINARY]
+                    else:
+                        bar_result = (False, msg)
             except (OSError, ValueError) as e:
                 # must still reach _apply_finished, or Apply stays greyed out until restart
                 bar_result = (False, f"ohmychadwm bar: {e}")
-            if bar_result is not None:
-                (log.log_success if bar_result[0] else log.log_error)(bar_result[1])
-        GLib.idle_add(self._apply_finished, results, bar_result)
 
-    def _apply_finished(self, results, bar_result):
+        if root_args:
+            # one pkexec for everything that needs root, so at most one password prompt
+            GLib.idle_add(self._set_status, "Waiting for your password…")
+            proc = subprocess.run(["pkexec", sys.executable, _ROOT_HELPER, *root_args], capture_output=True, text=True)
+            if proc.returncode != 0:
+                err = (proc.stdout + proc.stderr).strip()
+                results.append(("System changes", False, "cancelled or failed" + (f": {err}" if err else "")))
+                notes.clear()
+            elif compiled:
+                bar_result = (True, "ohmychadwm rebuilt and installed")
+        if compiled:
+            oma_chadwm.clean()
+        if bar_result is not None:
+            (log.log_success if bar_result[0] else log.log_error)(bar_result[1])
+        GLib.idle_add(self._apply_finished, results, bar_result, notes)
+
+    def _apply_finished(self, results, bar_result, notes):
         self._busy = False
         self._btn_apply.set_sensitive(True)
         failed = [f"{label}: {msg}" for label, ok, msg in results if not ok]
@@ -433,11 +493,14 @@ class AppearancePage:
         if failed:
             self._set_status("Some settings could not be written:\n" + "\n".join(failed), error=True)
         elif bar_result is not None:
+            relogin = " Log out and back in for the system-wide theme." if notes else ""
             if oma_chadwm.can_restart():
-                self._set_status("Applied. Restart ohmychadwm to see the new bar.")
+                self._set_status("Applied. Restart ohmychadwm to see the new bar." + relogin)
                 self._btn_restart.set_visible(True)
             else:
-                self._set_status("Applied. Press Super+Shift+R to see the new bar.")
+                self._set_status("Applied. Press Super+Shift+R to see the new bar." + relogin)
+        elif notes:
+            self._set_status("Applied. Log out and back in to see the new theme everywhere.")
         else:
             self._set_status("Applied. Apps you open from now on use the new look.")
         self._refresh_drift()

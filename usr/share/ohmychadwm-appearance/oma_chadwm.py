@@ -13,7 +13,6 @@ import subprocess
 
 CHADWM_DIR = os.path.expanduser("~/.config/ohmychadwm/chadwm")
 CONFIG = os.path.join(CHADWM_DIR, "config.def.h")
-INSTALL_PATH = "/usr/local/bin/ohmychadwm"
 
 _INCLUDE_RE = re.compile(r'^(\s*)(//\s*)?#include\s+"themes/([^"/]+)\.h"')
 BLOCK_BEGIN = "/* >>> ohmychadwm-appearance managed - regenerated, do not hand-edit >>> */"
@@ -126,24 +125,39 @@ def set_bar_font(text, family, size):
     return "".join(lines)
 
 
+SKEL_CONFIG = "/etc/skel/.config/ohmychadwm/chadwm/config.def.h"
+FALLBACK_THEME = "dracul"
+BUILT_BINARY = os.path.join(CHADWM_DIR, "ohmychadwm")
+
+
+def default_theme():
+    """Return the bar theme Kiro ships (active include in the skel config.def.h)."""
+    try:
+        with open(SKEL_CONFIG, encoding="utf-8") as f:
+            return active_theme(f.read()) or FALLBACK_THEME
+    except OSError:
+        return FALLBACK_THEME
+
+
 def _run(cmd):
     proc = subprocess.run(cmd, cwd=CHADWM_DIR, capture_output=True, text=True)
     return proc.returncode, (proc.stdout + proc.stderr).strip()
 
 
-def rebuild():
-    """Compile ohmychadwm as the user and install it with one pkexec prompt; return (ok, message)."""
+def compile_wm():
+    """Compile ohmychadwm as the user into BUILT_BINARY; return (ok, message)."""
     # config.h is only regenerated from config.def.h when missing, so clean first.
     _run(["make", "clean"])
     rc, out = _run(["make"])
     if rc != 0:
-        _run(["make", "clean"])
+        clean()
         return False, "Compile failed:\n" + out[-1500:]
-    rc, out = _run(["pkexec", "install", "-Dm755", os.path.join(CHADWM_DIR, "ohmychadwm"), INSTALL_PATH])
+    return True, "compiled"
+
+
+def clean():
+    """Remove build products from the user's chadwm directory."""
     _run(["make", "clean"])
-    if rc != 0:
-        return False, "Install was cancelled or failed" + (f":\n{out}" if out else "")
-    return True, f"ohmychadwm rebuilt and installed to {INSTALL_PATH}"
 
 
 def can_restart():
