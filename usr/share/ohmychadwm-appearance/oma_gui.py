@@ -409,13 +409,18 @@ class AppearancePage:
         bar_result = None
         if bar is not None:
             theme, font = bar
-            text = oma_chadwm.read_config()
-            new = oma_chadwm.set_theme(text, theme)
-            new = oma_chadwm.set_bar_font(new, *font) if font else oma_chadwm.clear_bar_font(new)
-            if new != text:
-                GLib.idle_add(self._set_status, "Recompiling ohmychadwm…")
-                oma_chadwm.write_config(new)
-                bar_result = oma_chadwm.rebuild()
+            try:
+                text = oma_chadwm.read_config()
+                new = oma_chadwm.set_theme(text, theme)
+                new = oma_chadwm.set_bar_font(new, *font) if font else oma_chadwm.clear_bar_font(new)
+                if new != text:
+                    GLib.idle_add(self._set_status, "Recompiling ohmychadwm…")
+                    oma_chadwm.write_config(new)
+                    bar_result = oma_chadwm.rebuild()
+            except (OSError, ValueError) as e:
+                # must still reach _apply_finished, or Apply stays greyed out until restart
+                bar_result = (False, f"ohmychadwm bar: {e}")
+            if bar_result is not None:
                 (log.log_success if bar_result[0] else log.log_error)(bar_result[1])
         GLib.idle_add(self._apply_finished, results, bar_result)
 
