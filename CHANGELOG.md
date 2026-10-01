@@ -10,6 +10,8 @@
   apps follow the per-user settings, with a warning that some GTK 4 apps may keep their own look.
 - **Reset to Kiro default now resets everything**: GTK pickers, `GTK_THEME` forced back on, the default bar theme,
   and no bar font override.
+- Short launcher `oma`: a relative symlink `usr/bin/oma -> ohmychadwm-appearance`, the same convention as ATT's
+  `att`.
 - All root work (the `GTK_THEME` line + the bar binary install) goes through one pkexec helper, `oma_root.py`, so an
   Apply asks for the password at most once.
 - Initial package: **ohmychadwm Appearance**, a GTK4 lxappearance-style tool for ohmychadwm. Why: one appearance
@@ -39,7 +41,7 @@
 
 ### Files Modified
 - `usr/share/ohmychadwm-appearance/oma_env.py`, `usr/share/ohmychadwm-appearance/oma_root.py` (new)
-- `usr/bin/ohmychadwm-appearance`
+- `usr/bin/ohmychadwm-appearance`, `usr/bin/oma` (symlink)
 - `usr/share/applications/ohmychadwm-appearance.desktop`
 - `usr/share/ohmychadwm-appearance/ohmychadwm-appearance.py`
 - `usr/share/ohmychadwm-appearance/oma_gui.py`

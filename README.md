@@ -58,7 +58,7 @@ On Kiro, from the Kiro repositories:
 sudo pacman -S ohmychadwm-appearance
 ```
 
-Launch it from the menu (**ohmychadwm Appearance**), or run `ohmychadwm-appearance`. Add `--debug` for extra console
+Launch it from the menu (**ohmychadwm Appearance**), or run `ohmychadwm-appearance` (short: `oma`). Add `--debug` for extra console
 output.
 
 ## Requirements

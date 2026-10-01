@@ -10,7 +10,7 @@ font**, and keeps every place those live in sync. It ships in `nemesis_repo`.
 
 - **Language**: Python 3, GTK4 + PyGObject. Same look and layout conventions as fish-tweak-tool.
 - **Entry point**: `usr/share/ohmychadwm-appearance/ohmychadwm-appearance.py`
-- **Launcher**: `usr/bin/ohmychadwm-appearance` · **Desktop entry**: `usr/share/applications/ohmychadwm-appearance.desktop`
+- **Launcher**: `usr/bin/ohmychadwm-appearance` + short alias `usr/bin/oma` (relative symlink, same convention as ATT's `att`) · **Desktop entry**: `usr/share/applications/ohmychadwm-appearance.desktop`
 - **Runs as the normal user.** All root work goes through ONE helper, `oma_root.py`, run once per Apply via
   `pkexec`: the `GTK_THEME` line in `/etc/environment` and installing the rebuilt binary. Never add other root
   escalation.
