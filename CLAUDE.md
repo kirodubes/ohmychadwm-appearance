@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 ## Project Overview
 
-ohmychadwm Appearance is a standalone GTK4 Python app, lxappearance-style, for the **ohmychadwm** X11 desktop. It
+Ohmychadwm Appearance is a standalone GTK4 Python app, lxappearance-style, for the **ohmychadwm** X11 desktop. It
 sets the GTK theme, icons, cursor (+ size), font, light/dark style and the ohmychadwm **bar theme** / optional **bar
 font**, and keeps every place those live in sync. It ships in `nemesis_repo`.
 
@@ -55,6 +55,9 @@ size is the exception: GTK 3 `0` means "X default", so `Xcursor.size` wins.
 
 ## Gotchas — do not revert
 
+- **Display name is capitalised: "Ohmychadwm".** Every user-visible string (window title, header, section
+  titles, buttons, status lines, `.desktop` Name/Comment) says "Ohmychadwm". Paths, the binary, the package
+  name, the app id and `--` CLI help stay lowercase `ohmychadwm`.
 - **`GTK_THEME` is Kiro's real theme switch.** The ISO ships `GTK_THEME=Arc-Dawn-Dark` in `/etc/environment`, and
   ATT's themes page toggles that exact line. The "force" checkbox keeps it (rewrites it); unticking comments it out
   (`#GTK_THEME=…`, kept so it can be re-enabled, and ATT still recognises it). `oma_env.force` keeps the line's

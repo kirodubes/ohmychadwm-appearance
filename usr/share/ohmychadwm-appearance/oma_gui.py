@@ -115,7 +115,7 @@ def _show_support_dialog(window):
     intro.set_max_width_chars(52)
     intro.set_label(
         "Kiro and its tools are built by one person, for the community — and kept free. "
-        "If ohmychadwm Appearance saves you time, a little support keeps the work going. "
+        "If Ohmychadwm Appearance saves you time, a little support keeps the work going. "
         "Thank you for being here."
     )
     box.append(intro)
@@ -299,15 +299,15 @@ class AppearancePage:
 
     def _build_bar_section(self, sel, config):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
-        box.append(_section("ohmychadwm bar"))
+        box.append(_section("Ohmychadwm bar"))
         if not self._has_chadwm:
-            box.append(_muted("~/.config/ohmychadwm is not set up for this user — log into ohmychadwm once first."))
+            box.append(_muted("~/.config/ohmychadwm is not set up for this user — log into Ohmychadwm once first."))
             self._dd_bar = None
             self._chk_bar_font = None
             self._font_warning = _muted()
             return box
         box.append(_muted(
-            "Colours and font of the top bar. Changing these recompiles ohmychadwm (asks your password once)."
+            "Colours and font of the top bar. Changing these recompiles Ohmychadwm (asks your password once)."
         ))
         grid = self._grid()
 
@@ -336,7 +336,7 @@ class AppearancePage:
         self._status.add_css_class("status-line")
         self._status.set_hexpand(True)
         self._status.set_wrap(True)
-        self._btn_restart = Gtk.Button(label="Restart ohmychadwm now")
+        self._btn_restart = Gtk.Button(label="Restart Ohmychadwm now")
         self._btn_restart.set_visible(False)
         self._btn_restart.connect("clicked", self._on_restart)
         reset = Gtk.Button(label="Reset to Kiro default")
@@ -491,7 +491,7 @@ class AppearancePage:
                 new = oma_chadwm.set_theme(text, theme)
                 new = oma_chadwm.set_bar_font(new, *font) if font else oma_chadwm.clear_bar_font(new)
                 if new != text:
-                    GLib.idle_add(self._set_status, "Recompiling ohmychadwm…")
+                    GLib.idle_add(self._set_status, "Recompiling Ohmychadwm…")
                     oma_chadwm.write_config(new)
                     compiled, msg = oma_chadwm.compile_wm()
                     if compiled:
@@ -500,7 +500,7 @@ class AppearancePage:
                         bar_result = (False, msg)
             except (OSError, ValueError) as e:
                 # must still reach _apply_finished, or Apply stays greyed out until restart
-                bar_result = (False, f"ohmychadwm bar: {e}")
+                bar_result = (False, f"Ohmychadwm bar: {e}")
 
         if root_args:
             # one pkexec for everything that needs root, so at most one password prompt
@@ -511,7 +511,7 @@ class AppearancePage:
                 results.append(("System changes", False, "cancelled or failed" + (f": {err}" if err else "")))
                 notes.clear()
             elif compiled:
-                bar_result = (True, "ohmychadwm rebuilt and installed")
+                bar_result = (True, "Ohmychadwm rebuilt and installed")
         if compiled:
             oma_chadwm.clean()
         if bar_result is not None:
@@ -529,7 +529,7 @@ class AppearancePage:
         elif bar_result is not None:
             relogin = " Log out and back in for the system-wide theme." if notes else ""
             if oma_chadwm.can_restart():
-                self._set_status("Applied. Restart ohmychadwm to see the new bar." + relogin)
+                self._set_status("Applied. Restart Ohmychadwm to see the new bar." + relogin)
                 self._btn_restart.set_visible(True)
             else:
                 self._set_status("Applied. Press Super+Shift+R to see the new bar." + relogin)
@@ -554,7 +554,7 @@ def build(window):
     header.set_margin_end(12)
     header.set_margin_top(10)
     header.set_margin_bottom(8)
-    title = Gtk.Label(label="ohmychadwm Appearance", xalign=0)
+    title = Gtk.Label(label="Ohmychadwm Appearance", xalign=0)
     title.set_name("title")
     title.set_hexpand(True)
     btn_support = Gtk.Button(label="♥ Support")

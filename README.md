@@ -1,4 +1,4 @@
-# ohmychadwm Appearance
+# Ohmychadwm Appearance
 
 One window to set the look of an **ohmychadwm** desktop: GTK theme, icon theme, mouse cursor, font, light/dark
 style, and the ohmychadwm bar theme. Think lxappearance, but it keeps *every* place those settings live in sync.
@@ -9,7 +9,7 @@ On a tiling-WM desktop one appearance choice is stored in many files. GTK 2, GTK
 apps, the XFCE settings channel and the X cursor each read their own. lxappearance only writes the GTK 2/3 side, so
 over time GTK 4 apps end up with different icons, fonts or cursor sizes than Thunar does.
 
-ohmychadwm Appearance writes all of them at once. It shows an **"out of sync"** banner when they disagree, with a
+Ohmychadwm Appearance writes all of them at once. It shows an **"out of sync"** banner when they disagree, with a
 one-click **Fix all**.
 
 ## The system-wide theme (GTK_THEME)
@@ -59,7 +59,7 @@ On Kiro, from the Kiro repositories:
 sudo pacman -S ohmychadwm-appearance
 ```
 
-Launch it from the menu (**ohmychadwm Appearance**), or run `ohmychadwm-appearance` (short: `oma`). Add `--debug` for extra console
+Launch it from the menu (**Ohmychadwm Appearance**), or run `ohmychadwm-appearance` (short: `oma`). Add `--debug` for extra console
 output.
 
 ## Requirements

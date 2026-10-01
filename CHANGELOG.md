@@ -3,6 +3,9 @@
 ## 2026.10.01
 
 ### What Changed
+- **Display name is now "Ohmychadwm"** in every user-visible string: window title (also shown in the
+  ohmychadwm bar), page header, the bar section, buttons, status lines and the menu entry. Paths, binary and
+  package name stay lowercase.
 - **GTK_THEME support.** Kiro sets the GTK theme system-wide via `GTK_THEME` in `/etc/environment`, which beats
   every settings file, so the first version showed the wrong current theme and its theme changes had no visible
   effect. The app now reads `GTK_THEME` as the current theme. A **"Force this theme on every app
@@ -45,6 +48,7 @@
   be tested against a scratch `HOME`.
 
 ### Files Modified
+- `usr/share/ohmychadwm-appearance/oma_gui.py`, `ohmychadwm-appearance.py`, `usr/share/applications/ohmychadwm-appearance.desktop`, `README.md`, `CLAUDE.md` (display name)
 - `usr/share/ohmychadwm-appearance/oma_env.py`, `oma_root.py`, `oma_system.py` (new)
 - `usr/bin/ohmychadwm-appearance`, `usr/bin/oma` (symlink)
 - `usr/share/applications/ohmychadwm-appearance.desktop`

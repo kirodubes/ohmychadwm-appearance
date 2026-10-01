@@ -43,7 +43,7 @@ class Main(Gtk.ApplicationWindow):
     """Main application window."""
 
     def __init__(self, app):
-        super().__init__(application=app, title="ohmychadwm Appearance")
+        super().__init__(application=app, title="Ohmychadwm Appearance")
         prefs = oma_config.load_prefs()
         self.set_default_size(prefs.get("window_width", 720), prefs.get("window_height", 680))
         self.connect("close-request", self._on_close)
@@ -74,7 +74,7 @@ def main():
     """Parse flags and run the application."""
     if "--debug" in sys.argv:
         log.DEBUG = True
-    log.log_section("ohmychadwm Appearance")
+    log.log_section("Ohmychadwm Appearance")
     AppearanceApp().run(None)
 
 

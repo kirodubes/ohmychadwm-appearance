@@ -1,7 +1,7 @@
 [Desktop Entry]
-Name=ohmychadwm Appearance
+Name=Ohmychadwm Appearance
 GenericName=Appearance Settings
-Comment=Set GTK theme, icons, cursor, font and the ohmychadwm bar theme in one place
+Comment=Set GTK theme, icons, cursor, font and the Ohmychadwm bar theme in one place
 Exec=/usr/bin/ohmychadwm-appearance
 Icon=preferences-desktop-theme
 Terminal=false
