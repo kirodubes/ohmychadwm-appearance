@@ -25,7 +25,7 @@ whatever the files below say. The app treats it as the current theme and gives y
 ## Reset to Kiro default
 
 **Reset to Kiro default** loads the look Kiro ships for *everything* the app touches: theme, icons, cursor, font and
-style (from `/etc/skel`), `GTK_THEME` forced again, the default bar theme (from the skel `config.def.h`) and no bar
+style (from `/etc/skel`), `GTK_THEME` forced again, the system/login-screen cursor following yours again, the default bar theme (from the skel `config.def.h`) and no bar
 font override. Press **Apply** to write it.
 
 ## What it sets
@@ -34,6 +34,7 @@ font override. Press **Apply** to write it.
 |---|---|
 | Theme (system-wide) | the `GTK_THEME` line in `/etc/environment`: forced or commented out (backup `/etc/environment.oma-bak`) |
 | Theme, icons, cursor, cursor size, font | `~/.config/gtk-3.0/settings.ini`, `~/.config/gtk-4.0/settings.ini`, `~/.gtkrc-2.0`, gsettings `org.gnome.desktop.interface`, XFCE `xsettings` channel (via `xfconf-query`) |
+| Cursor (optional, system-wide) | `/usr/share/icons/default/index.theme` and the SDDM login screen (`[Theme] CursorTheme` / `CursorSize`), via the checkbox "Also use this cursor on the login screen and as the system default" |
 | Cursor | also `~/.icons/default/index.theme` and `~/.Xresources` (applied live with `xrdb` + `xsetroot`) |
 | Light / dark style | gsettings `color-scheme` + GTK 4 `gtk-application-prefer-dark-theme` |
 | Bar theme | the active `#include "themes/…"` line in `~/.config/ohmychadwm/chadwm/config.def.h` |

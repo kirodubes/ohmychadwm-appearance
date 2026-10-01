@@ -10,6 +10,11 @@
   apps follow the per-user settings, with a warning that some GTK 4 apps may keep their own look.
 - **Reset to Kiro default now resets everything**: GTK pickers, `GTK_THEME` forced back on, the default bar theme,
   and no bar font override.
+- **Login screen + system cursor.** New checkbox "Also use this cursor on the login screen and as the system
+  default": writes `Inherits=` in `/usr/share/icons/default/index.theme` and `CursorTheme`/`CursorSize` under
+  `[Theme]` in the SDDM config that sets it (Kiro: `/etc/sddm.conf.d/kde_settings.conf`). Both are needed, because
+  SDDM ignores `icons/default` once its own `CursorTheme` is set. Shown in the drift banner, included in Reset, and
+  part of the same single password prompt.
 - Short launcher `oma`: a relative symlink `usr/bin/oma -> ohmychadwm-appearance`, the same convention as ATT's
   `att`.
 - All root work (the `GTK_THEME` line + the bar binary install) goes through one pkexec helper, `oma_root.py`, so an
@@ -40,7 +45,7 @@
   be tested against a scratch `HOME`.
 
 ### Files Modified
-- `usr/share/ohmychadwm-appearance/oma_env.py`, `usr/share/ohmychadwm-appearance/oma_root.py` (new)
+- `usr/share/ohmychadwm-appearance/oma_env.py`, `oma_root.py`, `oma_system.py` (new)
 - `usr/bin/ohmychadwm-appearance`, `usr/bin/oma` (symlink)
 - `usr/share/applications/ohmychadwm-appearance.desktop`
 - `usr/share/ohmychadwm-appearance/ohmychadwm-appearance.py`

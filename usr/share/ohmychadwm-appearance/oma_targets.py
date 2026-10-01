@@ -23,7 +23,7 @@ GTK4 = "GTK 4"
 GTK2 = "GTK 2"
 GSETTINGS = "gsettings"
 XFCONF = "XFCE xsettings"
-CURSOR_INDEX = "Default cursor"
+CURSOR_INDEX = "Personal default cursor"
 XRESOURCES = "Xresources"
 
 FALLBACK_CURSOR_SIZE = 24

@@ -15,6 +15,7 @@ import log  # noqa: E402
 import oma_chadwm  # noqa: E402
 import oma_env  # noqa: E402
 import oma_scan  # noqa: E402
+import oma_system  # noqa: E402
 import oma_targets  # noqa: E402
 
 _CURSOR_SIZES = [16, 24, 32, 48, 64]
@@ -141,6 +142,19 @@ def _show_support_dialog(window):
     dlg.present()
 
 
+def _system_cursor_lines(sel):
+    """Return drift lines for the system default and SDDM cursor against sel."""
+    sysc = oma_system.read()
+    lines = []
+    if sysc["default"] != sel.cursor:
+        lines.append(f"System default cursor: cursor = {sysc['default'] or 'not set'}")
+    if sysc["sddm"] != sel.cursor:
+        lines.append(f"Login screen (SDDM): cursor = {sysc['sddm'] or 'not set'}")
+    elif sysc["sddm_size"] not in (None, str(sel.cursor_size)):
+        lines.append(f"Login screen (SDDM): cursor size = {sysc['sddm_size']}")
+    return lines
+
+
 # ── The page ─────────────────────────────────────────────────────────────────
 
 
@@ -156,6 +170,8 @@ class AppearancePage:
         state = oma_targets.read_all()
         sel = oma_targets.current(state)
         self._forced = state.get(oma_targets.SYSTEM) is not None
+        sysc = oma_system.read()
+        self._sys_cursor_follows = sysc["default"] == sel.cursor and sysc["sddm"] in (None, sel.cursor)
         config = oma_chadwm.read_config()
         self._has_chadwm = bool(config)
 
@@ -232,6 +248,16 @@ class AppearancePage:
         force_box.append(self._chk_force)
         force_box.append(self._force_note)
         grid.attach(force_box, 1, 7, 2, 1)
+
+        self._chk_sys_cursor = Gtk.CheckButton(
+            label="Also use this cursor on the login screen and as the system default"
+        )
+        self._chk_sys_cursor.set_tooltip_text(
+            "Sets /usr/share/icons/default and the SDDM CursorTheme / CursorSize. Needs your password."
+        )
+        self._chk_sys_cursor.set_active(self._sys_cursor_follows)
+        self._chk_sys_cursor.connect("toggled", lambda *_: self._refresh_drift())
+        grid.attach(self._chk_sys_cursor, 1, 8, 2, 1)
 
         self._dd_icons = _dropdown(oma_scan.icon_themes(), sel.icons)
         self._dd_icons.connect("notify::selected", lambda *_: self._update_icon_preview())
@@ -371,8 +397,12 @@ class AppearancePage:
         else:
             self._font_warning.set_visible(False)
 
+    def _system_cursor_drift(self, sel):
+        return _system_cursor_lines(sel) if self._chk_sys_cursor.get_active() else []
+
     def _refresh_drift(self, state=None):
-        lines = oma_targets.drift(self._selection(), state)
+        sel = self._selection()
+        lines = oma_targets.drift(sel, state) + self._system_cursor_drift(sel)
         self._banner_detail.set_label("\n".join(lines))
         self._banner.set_visible(bool(lines))
 
@@ -417,6 +447,7 @@ class AppearancePage:
         self._font_btn.set_font_desc(Pango.FontDescription.from_string(sel.font))
         (self._chk_dark if sel.dark else self._chk_light).set_active(True)
         self._chk_force.set_active(True)  # the Kiro ISO ships GTK_THEME forced
+        self._chk_sys_cursor.set_active(True)  # ...and the same cursor for SDDM and /usr/share/icons/default
         if self._dd_bar is not None:
             _select(self._dd_bar, oma_chadwm.default_theme())
             self._chk_bar_font.set_active(False)
@@ -432,9 +463,10 @@ class AppearancePage:
         sel = self._selection()
         bar = self._bar_plan()
         force = self._chk_force.get_active()
-        threading.Thread(target=self._apply_worker, args=(sel, bar, force), daemon=True).start()
+        sys_cursor = self._chk_sys_cursor.get_active()
+        threading.Thread(target=self._apply_worker, args=(sel, bar, force, sys_cursor), daemon=True).start()
 
-    def _apply_worker(self, sel, bar, force):
+    def _apply_worker(self, sel, bar, force, sys_cursor):
         log.log_section("Apply")
         results = oma_targets.apply(sel)
         for label, ok, msg in results:
@@ -448,6 +480,8 @@ class AppearancePage:
         elif not force and env_active:
             root_args.append("--release-gtk-theme")
             notes.append("theme")
+        if sys_cursor and _system_cursor_lines(sel):
+            root_args += ["--system-cursor", sel.cursor, "--cursor-size", str(sel.cursor_size)]
 
         compiled = False
         if bar is not None:

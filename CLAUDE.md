@@ -27,7 +27,8 @@ usr/share/ohmychadwm-appearance/
 ├── oma_chadwm.py             # config.def.h: theme include, managed font block, rebuild, restart (toolkit-free)
 ├── oma_scan.py               # discover GTK / icon / cursor themes (toolkit-free)
 ├── oma_env.py                # GTK_THEME line in /etc/environment: parse / force / release (pure, toolkit-free)
-├── oma_root.py               # the pkexec helper: --gtk-theme / --release-gtk-theme / --install (fixed dest)
+├── oma_system.py             # system cursor: /usr/share/icons/default + SDDM [Theme] CursorTheme/Size (pure)
+├── oma_root.py               # the pkexec helper: --gtk-theme / --release-gtk-theme / --system-cursor / --install
 ├── oma_config.py             # app prefs (~/.config/ohmychadwm-appearance/prefs.json)
 ├── log.py                    # console logging (shared shape with the other Kiro tools)
 └── oma.css
@@ -40,6 +41,7 @@ Module prefix `oma_` = **o**h**m**ychadwm **a**ppearance, mirroring fish-tweak-t
 | Target | Fields |
 |---|---|
 | `/etc/environment` `GTK_THEME` (root, via `oma_root.py`) | theme. **Beats every file below** for GTK 3 and 4; read by pam_env, so changes show after re-login |
+| `/usr/share/icons/default/index.theme` + SDDM conf (root, optional checkbox) | `Inherits=` cursor; SDDM `[Theme] CursorTheme`/`CursorSize` in the conf that already sets it (Kiro: `/etc/sddm.conf.d/kde_settings.conf`). SDDM ignores icons/default once CursorTheme is set, so write BOTH |
 | `~/.config/gtk-3.0/settings.ini` | theme, icons, cursor, size, font. **Thunar reads this**: xfsettingsd is NOT running in ohmychadwm |
 | `~/.config/gtk-4.0/settings.ini` | the same + `gtk-application-prefer-dark-theme` |
 | `~/.gtkrc-2.0` | theme, icons, cursor, size, font (quoted strings) |
@@ -58,7 +60,9 @@ size is the exception: GTK 3 `0` means "X default", so `Xcursor.size` wins.
   (`#GTK_THEME=…`, kept so it can be re-enabled, and ATT still recognises it). `oma_env.force` keeps the line's
   quoting style and rejects unsafe names. Never drop the line, and never set the theme only in `settings.ini` while
   the line is active, because nothing would change.
-- **Reset to Kiro default covers everything**: GTK pickers from `/etc/skel`, force back on, the bar theme from the
+- `/usr/share/icons/default/index.theme` belongs to `default-cursors` but is a pacman **backup** file: edits survive
+  upgrades (as `.pacnew`). Don't "protect" it some other way.
+- **Reset to Kiro default covers everything**: GTK pickers from `/etc/skel`, force back on, system cursor checkbox on, the bar theme from the
   skel `config.def.h`, and the bar font block removed. Keep it complete when adding a setting.
 
 - **xfconf: always use `xfconf-query`, never edit `xsettings.xml`.** xfconfd caches the channel and overwrites hand
