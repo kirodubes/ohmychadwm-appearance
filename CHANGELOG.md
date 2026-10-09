@@ -3,17 +3,19 @@
 ## 2026.10.09
 
 ### What Changed
-- **VirtualBox: "Save current resolution" button.** A new "Screen (VirtualBox)" section, shown only inside a
-  VirtualBox guest, saves the current resolution as `~/.screenlayout/$USER.sh`, the layout ohmychadwm's `run.sh`
-  runs on every login. The VM then starts at that resolution.
+- **VirtualBox: set the screen resolution.** A new "Screen (VirtualBox)" section, shown only inside a VirtualBox
+  guest, has a resolution dropdown (preselected to 1920x1080 when the VM offers it) and a **Set resolution**
+  button. It switches the screen right away and saves the layout as `~/.screenlayout/$USER.sh`, which ohmychadwm's
+  `run.sh` runs on every login, so the VM keeps that resolution.
 
 ### Technical Details
 - New toolkit-free `oma_screen.py`: `is_virtualbox()` (`systemd-detect-virt --vm` = `oracle`, DMI product name
-  fallback), `build_script()` turns `xrandr --query` into an arandr-format script (`--output X --primary --mode WxH
-  --pos XxY --rotate R`, inactive outputs `--off`), and `save_current()` writes it with mode 0755 and a one-time
-  `.oma-bak` backup.
+  fallback), `modes()` lists the primary (else first connected) output's modes from `xrandr --query`,
+  `build_script()` writes arandr's own format (`--output X --primary --mode WxH --pos XxY --rotate R`, inactive
+  outputs `--off`) so arandr can edit it later, and `apply_and_save()` writes it (0755, one-time `.oma-bak`
+  backup) and runs it with `sh` to switch now.
 - The button runs in a daemon thread and reports through the status line. It's not part of Apply, drift or Reset.
-- Tested in the Kiro VirtualBox VM: detection, the written file, and running it with `sh`.
+- Tested in the Kiro VirtualBox VM (output `VGA-1`): 1024x768 → 1920x1080 live, file saved, backup kept.
 
 ### Files Modified
 - `usr/share/ohmychadwm-appearance/oma_screen.py` (new)

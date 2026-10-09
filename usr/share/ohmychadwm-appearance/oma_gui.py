@@ -336,15 +336,22 @@ class AppearancePage:
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         box.append(_section("Screen (VirtualBox)"))
         box.append(_muted(
-            "Resize the VirtualBox window to the size you want, then save it. Ohmychadwm uses this resolution "
-            f"from the next login on ({oma_screen.layout_path().replace(os.path.expanduser('~'), '~', 1)}, "
-            "arandr format)."
+            "Pick a resolution for this virtual machine. It is used right away and saved to "
+            f"{oma_screen.layout_path().replace(os.path.expanduser('~'), '~', 1)} (arandr format), so every "
+            "login starts with it."
         ))
-        btn = Gtk.Button(label="Save current resolution")
-        btn.set_halign(Gtk.Align.START)
-        btn.set_margin_top(6)
-        btn.connect("clicked", self._on_save_screen)
-        box.append(btn)
+        modes, default = oma_screen.modes()
+        if not modes:
+            box.append(_muted("xrandr reports no connected display."))
+            return box
+        grid = self._grid()
+        self._dd_mode = _dropdown(modes, default)
+        btn = Gtk.Button(label="Set resolution")
+        btn.connect("clicked", self._on_set_resolution)
+        grid.attach(_row_label("Resolution"), 0, 0, 1, 1)
+        grid.attach(self._dd_mode, 1, 0, 1, 1)
+        grid.attach(btn, 2, 0, 1, 1)
+        box.append(grid)
         return box
 
     def _build_footer(self):
@@ -559,10 +566,12 @@ class AppearancePage:
         self._refresh_drift()
         return False
 
-    def _on_save_screen(self, _widget):
+    def _on_set_resolution(self, _widget):
+        mode = _selected(self._dd_mode)
+
         def worker():
-            ok, msg = oma_screen.save_current()
-            (log.log_success if ok else log.log_error)(f"Screen layout: {msg}")
+            ok, msg = oma_screen.apply_and_save(mode)
+            (log.log_success if ok else log.log_error)(f"Screen: {msg}")
             GLib.idle_add(self._set_status, msg, not ok)
 
         threading.Thread(target=worker, daemon=True).start()
