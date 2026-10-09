@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## 2026.10.09
+
+### What Changed
+- **VirtualBox: "Save current resolution" button.** A new "Screen (VirtualBox)" section, shown only inside a
+  VirtualBox guest, saves the current resolution as `~/.screenlayout/$USER.sh`, the layout ohmychadwm's `run.sh`
+  runs on every login. The VM then starts at that resolution.
+
+### Technical Details
+- New toolkit-free `oma_screen.py`: `is_virtualbox()` (`systemd-detect-virt --vm` = `oracle`, DMI product name
+  fallback), `build_script()` turns `xrandr --query` into an arandr-format script (`--output X --primary --mode WxH
+  --pos XxY --rotate R`, inactive outputs `--off`), and `save_current()` writes it with mode 0755 and a one-time
+  `.oma-bak` backup.
+- The button runs in a daemon thread and reports through the status line. It's not part of Apply, drift or Reset.
+- Tested in the Kiro VirtualBox VM: detection, the written file, and running it with `sh`.
+
+### Files Modified
+- `usr/share/ohmychadwm-appearance/oma_screen.py` (new)
+- `usr/share/ohmychadwm-appearance/oma_gui.py`
+- `CLAUDE.md`
+- `CHANGELOG.md`
+
 ## 2026.10.01
 
 ### What Changed

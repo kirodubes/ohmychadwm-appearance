@@ -15,6 +15,7 @@ import log  # noqa: E402
 import oma_chadwm  # noqa: E402
 import oma_env  # noqa: E402
 import oma_scan  # noqa: E402
+import oma_screen  # noqa: E402
 import oma_system  # noqa: E402
 import oma_targets  # noqa: E402
 
@@ -187,6 +188,9 @@ class AppearancePage:
         body.append(self._build_gtk_section(sel))
         body.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
         body.append(self._build_bar_section(sel, config))
+        if oma_screen.is_virtualbox():
+            body.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
+            body.append(self._build_screen_section())
         scroller.set_child(body)
         self.widget.append(scroller)
 
@@ -326,6 +330,21 @@ class AppearancePage:
         grid.attach(self._font_warning, 1, 2, 1, 1)
 
         box.append(grid)
+        return box
+
+    def _build_screen_section(self):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        box.append(_section("Screen (VirtualBox)"))
+        box.append(_muted(
+            "Resize the VirtualBox window to the size you want, then save it. Ohmychadwm uses this resolution "
+            f"from the next login on ({oma_screen.layout_path().replace(os.path.expanduser('~'), '~', 1)}, "
+            "arandr format)."
+        ))
+        btn = Gtk.Button(label="Save current resolution")
+        btn.set_halign(Gtk.Align.START)
+        btn.set_margin_top(6)
+        btn.connect("clicked", self._on_save_screen)
+        box.append(btn)
         return box
 
     def _build_footer(self):
@@ -539,6 +558,14 @@ class AppearancePage:
             self._set_status("Applied. Apps you open from now on use the new look.")
         self._refresh_drift()
         return False
+
+    def _on_save_screen(self, _widget):
+        def worker():
+            ok, msg = oma_screen.save_current()
+            (log.log_success if ok else log.log_error)(f"Screen layout: {msg}")
+            GLib.idle_add(self._set_status, msg, not ok)
+
+        threading.Thread(target=worker, daemon=True).start()
 
     def _on_restart(self, _widget):
         self._btn_restart.set_visible(False)
