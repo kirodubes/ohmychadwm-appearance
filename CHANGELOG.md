@@ -9,6 +9,8 @@
   the layout as `~/.screenlayout/$USER.sh`, which ohmychadwm's `run.sh` runs on every login. **Revert**, closing
   the dialog, or letting the time run out switches back to the old resolution and saves nothing, so a wrong
   resolution can never get stuck.
+- **`arandr` is now a dependency** of the package (PKGBUILD in KIRO-PKG-BUILD-APPS): the saved layout is in its
+  format so it can be edited there, and it pulls in `xorg-xrandr`, which the Screen section runs.
 
 ### Technical Details
 - New toolkit-free `oma_screen.py`: `is_virtualbox()` (`systemd-detect-virt --vm` = `oracle`, DMI product name
