@@ -28,7 +28,7 @@ usr/share/ohmychadwm-appearance/
 ├── oma_scan.py               # discover GTK / icon / cursor themes (toolkit-free)
 ├── oma_env.py                # GTK_THEME line in /etc/environment: parse / force / release (pure, toolkit-free)
 ├── oma_system.py             # system cursor: /usr/share/icons/default + SDDM [Theme] CursorTheme/Size (pure)
-├── oma_screen.py             # VirtualBox only: pick a mode, apply it now + save ~/.screenlayout/<user>.sh (arandr format)
+├── oma_screen.py             # VirtualBox only: switch mode, 15 s keep/revert, save ~/.screenlayout/<user>.sh (arandr)
 ├── oma_root.py               # the pkexec helper: --gtk-theme / --release-gtk-theme / --system-cursor / --install
 ├── oma_config.py             # app prefs (~/.config/ohmychadwm-appearance/prefs.json)
 ├── log.py                    # console logging (shared shape with the other Kiro tools)
@@ -83,8 +83,8 @@ size is the exception: GTK 3 `0` means "X default", so `Xcursor.size` wins.
 - Edit the **user** copy `~/.config/ohmychadwm/chadwm/config.def.h`, never `/etc/skel`.
 - All file writes are line-based upserts (keys and comments the app doesn't own survive) with a one-time
   `<file>.oma-bak` backup. Keep it that way, and don't switch to configparser, which drops comments.
-- **Screen section is VirtualBox-only** (`systemd-detect-virt --vm` = `oracle`). It applies the picked mode and
-  writes `~/.screenlayout/<user>.sh`, the file ohmychadwm's `run.sh` runs on login, in arandr's own format so arandr can
+- **Screen section is VirtualBox-only** (`systemd-detect-virt --vm` = `oracle`). It switches to the picked mode, and only
+  after **Keep** (15 s countdown, else revert) writes `~/.screenlayout/<user>.sh`, the file ohmychadwm's `run.sh` runs on login, in arandr's own format so arandr can
   edit it. It's not an appearance setting, so it's not part of Apply, drift or Reset.
 - ohmychadwm's own terminal scripts `scripts/apply-font-globally.sh` / `generate-chadwm-theme.sh` touch rofi/terminal
   fonts and theme generation. They are a different scope, so don't merge them in here.

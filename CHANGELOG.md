@@ -5,17 +5,21 @@
 ### What Changed
 - **VirtualBox: set the screen resolution.** A new "Screen (VirtualBox)" section, shown only inside a VirtualBox
   guest, has a resolution dropdown (preselected to 1920x1080 when the VM offers it) and a **Set resolution**
-  button. It switches the screen right away and saves the layout as `~/.screenlayout/$USER.sh`, which ohmychadwm's
-  `run.sh` runs on every login, so the VM keeps that resolution.
+  button. The screen switches right away and a **"Keep 1920x1080?"** dialog counts down 15 seconds. **Keep** saves
+  the layout as `~/.screenlayout/$USER.sh`, which ohmychadwm's `run.sh` runs on every login. **Revert**, closing
+  the dialog, or letting the time run out switches back to the old resolution and saves nothing, so a wrong
+  resolution can never get stuck.
 
 ### Technical Details
 - New toolkit-free `oma_screen.py`: `is_virtualbox()` (`systemd-detect-virt --vm` = `oracle`, DMI product name
-  fallback), `modes()` lists the primary (else first connected) output's modes from `xrandr --query`,
+  fallback); `modes()` lists the primary (else first connected) output's modes from `xrandr --query`;
   `build_script()` writes arandr's own format (`--output X --primary --mode WxH --pos XxY --rotate R`, inactive
-  outputs `--off`) so arandr can edit it later, and `apply_and_save()` writes it (0755, one-time `.oma-bak`
-  backup) and runs it with `sh` to switch now.
-- The button runs in a daemon thread and reports through the status line. It's not part of Apply, drift or Reset.
-- Tested in the Kiro VirtualBox VM (output `VGA-1`): 1024x768 → 1920x1080 live, file saved, backup kept.
+  outputs `--off`) so arandr can edit it later; `switch()` runs the new layout and returns it with the old one;
+  `revert()` runs the old one; `save()` writes the file (0755, one-time `.oma-bak` backup).
+- xrandr runs in a daemon thread; the countdown is a `GLib.timeout_add_seconds` tick with a one-shot `finish()`
+  guard so Keep, Revert, close and timeout can't race. It's not part of Apply, drift or Reset.
+- Tested in the Kiro VirtualBox VM (output `VGA-1`): 1024x768 → 1920x1080 → timeout reverts to 1024x768 with
+  `erik.sh` untouched (same sha1 and mtime); Keep saves it and it stays after the 15 s.
 
 ### Files Modified
 - `usr/share/ohmychadwm-appearance/oma_screen.py` (new)

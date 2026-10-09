@@ -98,14 +98,36 @@ def build_script(xrandr_query, mode=None):
     return "#!/bin/sh\nxrandr " + " ".join(args) + "\n"
 
 
-def apply_and_save(mode):
-    """Switch the main output to mode now and save it to layout_path(); return (ok, message)."""
+def _run(script):
+    proc = subprocess.run(["sh", "-c", script], capture_output=True, text=True)
+    return proc.returncode == 0, proc.stderr.strip()
+
+
+def switch(mode):
+    """Switch the main output to mode without saving; return (ok, message, new_script, old_script)."""
     try:
-        script = build_script(_query(), mode)
+        query = _query()
     except (OSError, subprocess.CalledProcessError) as e:
-        return False, f"xrandr failed: {e}"
-    if script is None:
-        return False, "xrandr reports no connected display"
+        return False, f"xrandr failed: {e}", None, None
+    new, old = build_script(query, mode), build_script(query)
+    if new is None:
+        return False, "xrandr reports no connected display", None, None
+    ok, err = _run(new)
+    if not ok:
+        return False, f"xrandr could not switch to {mode}: {err}", None, None
+    return True, f"Screen set to {mode}.", new, old
+
+
+def revert(old_script):
+    """Switch back to the layout from before switch(); return (ok, message)."""
+    if old_script is None:
+        return False, "no previous layout to go back to"
+    ok, err = _run(old_script)
+    return (True, "Resolution reverted, nothing saved.") if ok else (False, f"Revert failed: {err}")
+
+
+def save(script):
+    """Write script to layout_path() (one-time .oma-bak backup); return (ok, message)."""
     path = layout_path()
     try:
         os.makedirs(LAYOUT_DIR, exist_ok=True)
@@ -118,7 +140,4 @@ def apply_and_save(mode):
     except OSError as e:
         return False, f"{path}: {e}"
     short = path.replace(os.path.expanduser("~"), "~", 1)
-    proc = subprocess.run(["sh", path], capture_output=True, text=True)
-    if proc.returncode != 0:
-        return False, f"Saved to {short}, but xrandr could not switch to {mode}: {proc.stderr.strip()}"
-    return True, f"Screen set to {mode} and saved to {short}, so every login uses it."
+    return True, f"Resolution kept and saved to {short}, so every login uses it."

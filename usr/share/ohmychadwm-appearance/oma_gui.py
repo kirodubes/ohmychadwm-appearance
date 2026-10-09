@@ -20,6 +20,7 @@ import oma_system  # noqa: E402
 import oma_targets  # noqa: E402
 
 _CURSOR_SIZES = [16, 24, 32, 48, 64]
+_KEEP_SECONDS = 15
 
 _ROOT_HELPER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "oma_root.py")
 
@@ -336,9 +337,10 @@ class AppearancePage:
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         box.append(_section("Screen (VirtualBox)"))
         box.append(_muted(
-            "Pick a resolution for this virtual machine. It is used right away and saved to "
-            f"{oma_screen.layout_path().replace(os.path.expanduser('~'), '~', 1)} (arandr format), so every "
-            "login starts with it."
+            "Pick a resolution for this virtual machine. It is used right away; keep it within "
+            f"{_KEEP_SECONDS} seconds and it is saved to "
+            f"{oma_screen.layout_path().replace(os.path.expanduser('~'), '~', 1)} (arandr format) for every login, "
+            "otherwise the old resolution comes back."
         ))
         modes, default = oma_screen.modes()
         if not modes:
@@ -568,13 +570,77 @@ class AppearancePage:
 
     def _on_set_resolution(self, _widget):
         mode = _selected(self._dd_mode)
+        self._set_status(f"Switching to {mode}…")
 
         def worker():
-            ok, msg = oma_screen.apply_and_save(mode)
+            ok, msg, new, old = oma_screen.switch(mode)
             (log.log_success if ok else log.log_error)(f"Screen: {msg}")
-            GLib.idle_add(self._set_status, msg, not ok)
+            if ok:
+                GLib.idle_add(self._ask_keep, mode, new, old)
+            else:
+                GLib.idle_add(self._set_status, msg, True)
 
         threading.Thread(target=worker, daemon=True).start()
+
+    def _ask_keep(self, mode, new, old):
+        dlg = Gtk.Window(title="Keep this resolution?", transient_for=self.widget.get_root(), modal=True)
+        dlg.set_resizable(False)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        for side in ("start", "end", "top", "bottom"):
+            getattr(box, f"set_margin_{side}")(18)
+        heading = Gtk.Label(xalign=0)
+        heading.set_markup(f"<b>Keep {mode}?</b>")
+        countdown = _muted()
+        buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        buttons.set_halign(Gtk.Align.END)
+        btn_revert = Gtk.Button(label="Revert")
+        btn_keep = Gtk.Button(label="Keep")
+        btn_keep.add_css_class("suggested-action")
+        buttons.append(btn_revert)
+        buttons.append(btn_keep)
+        box.append(heading)
+        box.append(countdown)
+        box.append(buttons)
+        dlg.set_child(box)
+
+        left = [_KEEP_SECONDS]
+        decided = [False]
+
+        def finish(keep):
+            if decided[0]:
+                return
+            decided[0] = True
+            GLib.source_remove(timer)
+            dlg.destroy()
+            if keep:
+                ok, msg = oma_screen.save(new)
+                (log.log_success if ok else log.log_error)(f"Screen: {msg}")
+                self._set_status(msg, not ok)
+                return
+
+            def worker():
+                ok, msg = oma_screen.revert(old)
+                (log.log_success if ok else log.log_error)(f"Screen: {msg}")
+                GLib.idle_add(self._set_status, msg, not ok)
+
+            threading.Thread(target=worker, daemon=True).start()
+
+        def tick():
+            left[0] -= 1
+            if left[0] <= 0:
+                finish(False)
+                return False
+            countdown.set_label(f"Going back to the old resolution in {left[0]} seconds.")
+            return True
+
+        countdown.set_label(f"Going back to the old resolution in {left[0]} seconds.")
+        timer = GLib.timeout_add_seconds(1, tick)
+        btn_keep.connect("clicked", lambda _w: finish(True))
+        btn_revert.connect("clicked", lambda _w: finish(False))
+        dlg.connect("close-request", lambda _w: finish(False) or True)
+        dlg.present()
+        btn_keep.grab_focus()
+        return False
 
     def _on_restart(self, _widget):
         self._btn_restart.set_visible(False)
