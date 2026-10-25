@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## 2026.10.25
+
+### What Changed
+- **Superseded by Ohmychadwm Tweak Tool** (`kirodubes/ohmychadwm-tweak-tool`). Its Look page is this app; it adds bar &
+  windows, wallpaper, displays, mouse & touchpad, startup apps, default apps and keys. The new package
+  replaces `ohmychadwm-appearance` on upgrade and keeps the `oma` command. No further work happens here.
+
+### Technical Details
+- The successor reads this app's managed `config.def.h` markers, its `.oma-bak` backups and its `prefs.json`, so
+  nothing is lost in the switch.
+
+### Files Modified
+- `README.md`
+- `CHANGELOG.md`
+
 ## 2026.10.09
 
 ### What Changed

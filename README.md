@@ -1,5 +1,9 @@
 # Ohmychadwm Appearance
 
+> **Superseded by [Ohmychadwm Tweak Tool](https://github.com/kirodubes/ohmychadwm-tweak-tool)** (2026-10-25). Everything
+> this app does is its Look page. On upgrade pacman asks to replace `ohmychadwm-appearance` with
+> `ohmychadwm-tweak-tool`: answer Y. The `oma` command keeps working. This repo is no longer developed.
+
 One window to set the look of an **ohmychadwm** desktop: GTK theme, icon theme, mouse cursor, font, light/dark
 style, and the ohmychadwm bar theme. Think lxappearance, but it keeps *every* place those settings live in sync.
 
